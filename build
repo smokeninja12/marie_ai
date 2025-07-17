@@ -1,0 +1,59 @@
+import streamlit as st
+import openai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+st.set_page_config(page_title="Marie AI – Your Support Companion", page_icon="❤️‍🩹")
+st.title("❤️‍🩹 Marie AI – Your Mental Health Support Companion")
+
+# Language and personality
+language = st.selectbox("Choose your language / Sprache wählen:", ["English", "Deutsch"])
+tone = st.selectbox("Choose Marie AI's personality:", ["Gentle", "Motivational", "Friendly", "Empathic"])
+
+# Personalized name prompt
+if "user_name" not in st.session_state:
+    st.session_state.user_name = st.text_input("What's your name? / Wie heißt du?", key="name_input")
+
+# System prompt
+if "initialized" not in st.session_state:
+    personality = {
+        "English": f"You are Marie AI, a {tone.lower()} and supportive mental health chatbot. You provide thoughtful, empathetic, non-clinical support. You speak to the user by name when known. Do not give medical advice.",
+        "Deutsch": f"Du bist Marie AI, ein {tone.lower()}er und unterstützender Chatbot für psychische Gesundheit. Du gibst einfühlsame, nicht-klinische Unterstützung und sprichst die Person mit Namen an, wenn bekannt. Keine medizinische Beratung."
+    }
+    st.session_state.messages = [{"role": "system", "content": personality[language]}]
+    st.session_state.initialized = True
+
+# User input
+user_input = st.text_input("What’s on your mind? / Was belastet dich gerade?", key="input")
+
+if user_input:
+    user_name = st.session_state.user_name or "friend"
+    message = f"My name is {user_name}. {user_input}"
+    st.session_state.messages.append({"role": "user", "content": message})
+    
+    # Emergency detection
+    if any(word in user_input.lower() for word in ["suicide", "mich umbringen", "end my life"]):
+        st.warning("If you're in danger, please call 988 (US) or visit [findahelpline.com](https://findahelpline.com) for help.")
+
+    # Get Marie AI's response
+    with st.spinner("Marie is listening..."):
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=st.session_state.messages
+        )
+        reply = response.choices[0].message["content"]
+        st.session_state.messages.append({"role": "assistant", "content": reply})
+
+# Show chat history
+st.markdown("### ❤️‍🩹Conversation with Marie AI:")
+for msg in st.session_state.messages[1:]:
+    speaker = "You / Du" if msg["role"] == "user" else "Marie AI"
+    st.markdown(f"**{speaker}:** {msg['content']}")
+
+# Export conversation
+if st.button("💾 Download conversation"):
+    chat_history = "\n".join([f"{'You' if m['role']=='user' else 'Marie AI'}: {m['content']}" for m in st.session_state.messages[1:]])
+    st.download_button("Download Chat (.txt)", chat_history, file_name="marie_ai_chat.txt")
