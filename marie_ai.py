@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-st.set_page_config(page_title="Marie AI – Your Support Companion", page_icon="💬")
-st.title("💬 Marie AI – Your Mental Health Support Companion")
+st.set_page_config(page_title="Marie AI – Your Support Companion", page_icon="❤️‍🩹")
+st.title("❤️‍🩹 Marie AI – Your Mental Health Support Companion")
 
 # Language and personality
 language = st.selectbox("Choose your language / Sprache wählen:", ["English", "Deutsch"])
@@ -40,12 +40,17 @@ if user_input:
 
     # Get Marie AI's response
     with st.spinner("Marie is listening..."):
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=st.session_state.messages
-        )
-        reply = response.choices[0].message["content"]
-        st.session_state.messages.append({"role": "assistant", "content": reply})
+        import openai
+
+client = openai.OpenAI()
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=st.session_state.messages
+)
+
+reply = response.choices[0].message.content
+
 
 # Show chat history
 st.markdown("### 💬 Conversation with Marie AI:")
